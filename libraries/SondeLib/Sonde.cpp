@@ -76,6 +76,7 @@ void Sonde::defaultConfig() {
 	memset(sondeList, 0, (MAXSONDE+1)*sizeof(SondeInfo));
 	config.touch_thresh = 70;
 	config.led_pout = -1;
+	config.buzzer_pout = -1;
 	config.power_pout = -1;
 	config.spectrum=10;
 	// Try autodetecting board type
@@ -246,6 +247,8 @@ void Sonde::setConfig(const char *cfg) {
 		config.touch_thresh = atoi(val);
 	} else if(strcmp(cfg,"led_pout")==0) {
 		config.led_pout = atoi(val);
+	} else if(strcmp(cfg,"buzzer_pout")==0) {
+		config.buzzer_pout = atoi(val);
 	} else if(strcmp(cfg,"power_pout")==0) {
 		config.power_pout = atoi(val);
 	} else if(strcmp(cfg,"disptype")==0) {
@@ -488,6 +491,10 @@ void Sonde::setup() {
 }
 
 extern void flashLed(int ms);
+extern void flashBuzzerRSSI(int rssi);
+extern void flashBuzzerERROR();
+extern void flashBuzzer();
+extern void flashBuzzer(int note);
 
 void Sonde::receive() {
 	uint16_t res = 0;
@@ -515,18 +522,22 @@ void Sonde::receive() {
 
 	// state information for RX_TIMER / NORX_TIMER events
         if(res==0) {  // RX OK
-		flashLed(700);
-                if(si->lastState != 1) {
-                        si->rxStart = millis();
-                        si->lastState = 1;
-                }
+			flashLed(700);
+			flashBuzzerRSSI(si->rssi);
+			if(si->lastState != 1) {
+					si->rxStart = millis();
+					si->lastState = 1;
+			}
         } else { // RX not ok
-		if(res==RX_ERROR) flashLed(100);
-		Serial.printf("RX result %d (%s), laststate was %d\n", res, (res<=3)?RXstr[res]:"?", si->lastState);
-                if(si->lastState != 0) {
-                        si->norxStart = millis();
-                        si->lastState = 0;
-                }
+			if(res==RX_ERROR) {
+				flashLed(100);
+				flashBuzzerERROR();
+			}
+			Serial.printf("RX result %d (%s), laststate was %d\n", res, (res<=3)?RXstr[res]:"?", si->lastState);
+			if(si->lastState != 0) {
+					si->norxStart = millis();
+					si->lastState = 0;
+			}
         }
 	// Serial.printf("debug: res was %d, now lastState is %d\n", res, si->lastState);
 
@@ -547,6 +558,15 @@ void Sonde::receive() {
 		if(action==ACT_DISPLAY_SCANNER) {
 			// nothing to do here, be re-call setup() for M10/M20 for repeating AFC
 		}
+		else if(action==ACT_BUZZER) {
+		    if(buzzer) {
+				flashBuzzer(300);
+				buzzer=false;
+			} else {
+				buzzer=true;
+				flashBuzzer(1500);
+			}
+	    }
 		else {
 			if(action==ACT_NEXTSONDE||action==ACT_PREVSONDE)
 				nextRxSonde();

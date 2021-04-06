@@ -1,13 +1,13 @@
 # Frequency in Mhz (format nnn.nnn)
 # Type (4=RS41, 6=DFM normal, DFM-06, 9=DFM inverted, DFM-09)
 #
-402.300 4 + Greifswald
+402.300 4 - Greifswald
 402.500 4 - Schleswig
-402.700 4 + HH-Sasel
+402.700 4 - HH-Sasel
 403.000 4 - DeBilt
-404.100 4 + Norderney
+404.100 4 - Norderney
 404.300 4 - Schleswig_2
-404.500 4 - Meppen
+404.500 4 + Meppen
 404.700 4 - Greifswald_2
 405.100 4 - Lindenberg
 405.700 4 + Bergen

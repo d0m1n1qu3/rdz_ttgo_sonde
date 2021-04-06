@@ -11,6 +11,7 @@
 #include <ESPmDNS.h>
 #include <MicroNMEA.h>
 #include <Ticker.h>
+#include <Tone32.h>
 
 #include <SX1278FSK.h>
 #include <Sonde.h>
@@ -85,6 +86,7 @@ static unsigned long specTimer;
 void enterMode(int mode);
 void WiFiEvent(WiFiEvent_t event);
 
+void flashBuzzer();
 
 // Read line from file, independent of line termination (LF or CR LF)
 String readLine(Stream &stream) {
@@ -199,7 +201,7 @@ void setupChannelList() {
     else if (space[1] == '2') {
       type = STYPE_M20;
     }
-    else if (space[1] == '3') {
+        else if (space[1] == '3') {
       type = STYPE_MP3H;
     }
     else continue;
@@ -577,6 +579,7 @@ struct st_configitems config_list[] = {
   {"touch_thresh", "Touch button threshold<br>(0 for calib mode)", 0, &sonde.config.touch_thresh},
   {"power_pout", "Power control port", 0, &sonde.config.power_pout},
   {"led_pout", "LED output port", 0, &sonde.config.led_pout},
+  {"buzzer_pout", "Buzzer output port", 0, &sonde.config.buzzer_pout},
   {"gps_rxd", "GPS RXD pin (-1 to disable)", 0, &sonde.config.gps_rxd},
   {"gps_txd", "GPS TXD pin (not really needed)", 0, &sonde.config.gps_txd},
   {"mdnsname", "mDNS name", 14, &sonde.config.mdnsname},
@@ -1326,7 +1329,9 @@ void gpsTask(void *parameter) {
   while (1) {
     while (Serial2.available()) {
       char c = Serial2.read();
-      //Serial.print(c);
+#ifdef DEBUG_GPS
+      Serial.print(c);
+#endif
       if (nmea.process(c)) {
         gpsPos.valid = nmea.isValid();
         if (gpsPos.valid) {
@@ -1495,6 +1500,30 @@ void flashLed(int ms) {
   if (sonde.config.led_pout >= 0) {
     digitalWrite(sonde.config.led_pout, HIGH);
     ledFlasher.once_ms(ms, ledOffCallback);
+  }
+}
+void flashBuzzer() {
+  flashBuzzer(NOTE_C4);
+}
+void flashBuzzer(int note) {
+  if (sonde.config.buzzer_pout >= 0 && sonde.buzzer) {
+    tone(sonde.config.buzzer_pout, note, 500, 0);
+    noTone(sonde.config.buzzer_pout, 0);
+  }
+}
+void flashBuzzerRSSI(int rssi) {
+  if (sonde.config.buzzer_pout >= 0 && sonde.buzzer) {
+    int rssiTone = map(rssi, 400, 0, NOTE_C3, NOTE_C7);
+    tone(sonde.config.buzzer_pout, rssiTone, 500, 0);
+    noTone(sonde.config.buzzer_pout, 0);
+  }
+}
+void flashBuzzerERROR() {
+  if (sonde.config.buzzer_pout >= 0 && sonde.buzzer) {
+    tone(sonde.config.buzzer_pout, NOTE_C3, 200, 0);
+    noTone(sonde.config.buzzer_pout, 0);
+    tone(sonde.config.buzzer_pout, NOTE_C2, 500, 0);
+    noTone(sonde.config.buzzer_pout, 0);
   }
 }
 
@@ -1786,6 +1815,12 @@ void setup()
     flashLed(1000); // testing
   }
 
+  if (sonde.config.buzzer_pout >= 0) {
+    pinMode(sonde.config.buzzer_pout, OUTPUT);
+    flashBuzzerERROR();
+    flashBuzzerRSSI(220);
+  }
+
   button1.pin = sonde.config.button_pin;
   button2.pin = sonde.config.button2_pin;
   if (button1.pin != 0xff) {
@@ -1849,20 +1884,27 @@ void setup()
     disp.rdis->drawString(0, 3, " RST:");
     disp.rdis->drawString(6, 3, buf);
 
-    delay(1000);
+    delay(500);
     itoa(sonde.config.led_pout, buf, 10);
     disp.rdis->drawString(0, 4, " LED:");
     disp.rdis->drawString(6, 4, buf);
+    flashLed(500);
+
+    delay(500);
+    itoa(sonde.config.buzzer_pout, buf, 10);
+    disp.rdis->drawString(0, 5, " BUZ:");
+    disp.rdis->drawString(6, 5, buf);
+    flashBuzzer();
 
     delay(500);
     itoa(sonde.config.spectrum, buf, 10);
-    disp.rdis->drawString(0, 5, " SPEC:");
-    disp.rdis->drawString(6, 5, buf);
+    disp.rdis->drawString(0, 6, " SPEC:");
+    disp.rdis->drawString(6, 6, buf);
 
     delay(500);
     itoa(sonde.config.maxsonde, buf, 10);
-    disp.rdis->drawString(0, 6, " MAX:");
-    disp.rdis->drawString(6, 6, buf);
+    disp.rdis->drawString(0, 7, " MAX:");
+    disp.rdis->drawString(6, 7, buf);
 
     delay(5000);
     sonde.clearDisplay();
@@ -2555,7 +2597,7 @@ void loopTouchCalib() {
 // 2: access point mode in background. directly start initial mode (spectrum or scanner)
 // 3: traditional sync. WifiScan. Tries to connect to a network, in case of failure activates AP.
 //    Mode 3 shows more debug information on serial port and display.
-#define MAXWIFIDELAY 20
+#define MAXWIFIDELAY 50
 static const char* _scan[2] = {"/", "\\"};
 void loopWifiScan() {
   if (sonde.config.wifi == 0) {   // no Wifi
@@ -2604,7 +2646,7 @@ void loopWifiScan() {
     Serial.print("Connecting to: "); Serial.print(fetchWifiSSID(index));
     Serial.print(" with password "); Serial.println(fetchWifiPw(index));
 
-    disp.rdis->drawString(0, lastl, "Conn:");
+    disp.rdis->drawString(0, lastl, "Conn: ");
     disp.rdis->drawString(6 * dispxs, lastl, fetchWifiSSID(index));
     WiFi.begin(fetchWifiSSID(index), fetchWifiPw(index));
     while (WiFi.status() != WL_CONNECTED && cnt < MAXWIFIDELAY)  {

@@ -5,11 +5,12 @@
 #button_pin=130
 #button2_pin=142
 # No specification in config file: try autodetection (gpio4 pin level at startup)
-#button_pin=0
-#button2_pin=255
-#button2_axp=0
+button_pin=12
+button2_pin=13
+button2_axp=0
 # LED port
-#led_pout=-1
+led_pout=25
+buzzer_pout=4
 # OLED Setup is depending on hardware of LoRa board
 # TTGO v1:  SDA=4  SCL=15, RST=16 
 # TTGO v2:  SDA=21 SCL=22, RST=16
@@ -26,8 +27,8 @@
 #tft_cs=0
 tft_orient=1
 #tft_modeflip=0
-#gps_rxd=-1
-#gps_txd=-1
+gps_rxd=35
+gps_txd=34
 # Show AFC value (for RS41 and M10/M20, maybe also DFM, but not useful for RS92)
 showafc=1
 # Frequency correction, in Hz
@@ -36,7 +37,7 @@ showafc=1
 # General config settings
 #-------------------------------#
 maxsonde=20
-debug=0
+debug=1
 # wifi mode: 1=client in background; 2=AP in background; 3=client on startup, ap if failure
 wifi=3
 # TCP/IP KISS TNC in port 14590 for APRSdroid (0=disabled, 1=enabled)
@@ -44,12 +45,12 @@ kisstnc.active = 1
 
 # which screens file to use (0: screens.txt, i>0: screens${i}.txt
 # 0: old version; 1: for OLED, 2: for TFT; 3: for TFT (portrait mode)
-# screenfile=2
+screenfile=1
 # display configuration. List of "displays"
 # first entry: "Scanner" display
 # second entry: default "Receiver" display
 # additional entries: alternative receiver display, activated by button
-display=0,1,2,3,4
+display=0,1,2,3,4,5,6
 # set to -1 to disable (used for "N" values in timers in screens.txt). Value in seconds
 norx_timeout=20
 #-------------------------------#
@@ -91,7 +92,7 @@ ephftp=www.ngs.noaa.gov/cors/rinex/
 #-------------------------------#
 # local use only, do not feed to public services
 # data not sanitized / quality checked, outliers not filtered out
-axudp.active=1
+axudp.active=0
 axudp.host=192.168.42.20
 axudp.port=9002
 axudp.symbol=/O
@@ -111,9 +112,9 @@ tcp.idformat=0
 # mqtt settings
 #-------------------------------#
 # data not sanitized / quality checked, outliers not filtered out
-mqtt.active=0
+mqtt.active=1
 mqtt.id=rdz_sonde_server
-mqtt.host=
+mqtt.host=192.168.42.4
 mqtt.port=1883
 mqtt.username=
 mqtt.password=

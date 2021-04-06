@@ -46,6 +46,7 @@ extern const char *RXstr[];
 #define ACT_DISPLAY_WIFI 61
 #define ACT_NEXTSONDE 65
 #define ACT_PREVSONDE 66
+#define ACT_BUZZER 67
 #define ACT_ADDFREQ(n) ((n)+64)
 #define ACT_SONDE(n) ((n)+128)
 
@@ -187,6 +188,7 @@ typedef struct st_rdzconfig {
 	int button2_axp;		// Use AXP192 power button as button2
 	int touch_thresh;		// Threshold value (0..100) for touch input button
 	int led_pout;			// POUT port number of LED (used as serial monitor)
+	int buzzer_pout;		// POUT port number of Buzzer (used as serial monitor)
 	int power_pout;			// Power control pin (for Heltec v2)
 	int disptype;			// 0=OLED; 1=ILI9225
 	int oled_sda;			// OLED/TFT data pin 
@@ -242,6 +244,7 @@ class Sonde
 private:
 public:
 	RDZConfig config;
+    bool buzzer = true;
 	int fingerprint = 0;
 	int currentSonde = 0;
 	int nSonde;

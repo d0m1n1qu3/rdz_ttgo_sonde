@@ -794,6 +794,9 @@ void Display::parseDispElement(char *text, DispEntry *de)
 		de->func = disp.drawBatt;
 		de->extra = strdup(text+1);
 		break;
+	case 'y':
+		de->func = disp.drawBuzzer;
+		break;
 	default:
 		Serial.printf("Unknown element: %c\n", type);
 		break;
@@ -810,6 +813,8 @@ static uint8_t ACTION(char c) {
 		return ACT_DISPLAY_WIFI;
 	case '+':
 		return ACT_NEXTSONDE;
+	case 'Y':
+		return ACT_BUZZER;
 	case '#':	
 		return ACT_NONE;
 	case '>':
@@ -1127,6 +1132,14 @@ void Display::drawRSSI(DispEntry *de) {
 	} else { // special for 2" display
 		snprintf(buf, 16, "-%d.%c  ", sonde.si()->rssi/2, (sonde.si()->rssi&1)?'5':'0');
 		drawString(de,buf);
+	}
+}
+void Display::drawBuzzer(DispEntry *de) {
+	rdis->setFont(de->fmt);
+	if(sonde.buzzer) {
+		drawString(de,"O");
+	} else {
+		drawString(de,".");
 	}
 }
 void Display::drawQS(DispEntry *de) {
